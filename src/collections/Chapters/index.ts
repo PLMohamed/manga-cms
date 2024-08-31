@@ -1,8 +1,9 @@
 import { anyone } from '@/access/anyone'
 import { authenticated } from '@/access/authenticated'
-import { slugField } from '@/fields/slug'
 import { generatePreviewPath } from '@/utilities/generatePreviewPath'
 import { CollectionConfig } from 'payload'
+import { ChapterTitle } from './title'
+import { toast } from '@payloadcms/ui'
 
 export const Chapters: CollectionConfig = {
   slug: 'chapters',
@@ -13,12 +14,21 @@ export const Chapters: CollectionConfig = {
     update: authenticated,
   },
   admin: {
-    defaultColumns: ['manga', 'chapterNumber', 'publishedAt', 'slug'],
-    useAsTitle: 'manga.title',
+    defaultColumns: ['manga', 'chapterNumber', 'publishedAt'],
     livePreview: {
-      url: ({ data }) => {
+      url: async ({ data, payload }) => {
+        const manga = await payload.findByID({
+          collection: 'manga',
+          id: data?.manga,
+        })
+
+        if (!manga) {
+          toast.error("Manga field can't be empty")
+          return '/'
+        }
+
         const path = generatePreviewPath({
-          path: `/${typeof data?.slug === 'string' ? data.slug : ''}`,
+          path: `/${manga.title}/${typeof data?.chapterNumber ? encodeURIComponent(data.chapterNumber) : ''}`,
         })
         return `${process.env.NEXT_PUBLIC_SERVER_URL}${path}`
       },
@@ -27,8 +37,10 @@ export const Chapters: CollectionConfig = {
       generatePreviewPath({
         path: `/${typeof doc?.slug === 'string' ? doc.slug : ''}`,
       }),
+    useAsTitle: 'title',
   },
   fields: [
+    ChapterTitle,
     {
       name: 'manga',
       type: 'relationship',
@@ -47,6 +59,5 @@ export const Chapters: CollectionConfig = {
         position: 'sidebar',
       },
     },
-    ...slugField(),
   ],
 }

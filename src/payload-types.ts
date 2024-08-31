@@ -581,6 +581,7 @@ export interface Manga {
  */
 export interface Chapter {
   id: number;
+  title: string;
   manga: number | Manga;
   chapterNumber: number;
   publishedAt?: string | null;
